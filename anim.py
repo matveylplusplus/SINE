@@ -1,5 +1,6 @@
 from manim import *
 from numpy import exp, copy
+from chord import Chord
 
 """
 cache is purely for optimizing self.[blank] calls in animation/updater functions
@@ -33,16 +34,16 @@ class trav_logistically(Animation):
 
 
 class quarter_slo_down(Animation):
-    def __init__(self, mobject, path, start_prop, origin_offset, start_speed):
-        self.path = path
-        self.start_prop = start_prop
-        self.origin_offset = origin_offset
-        self.start_speed = start_speed
+    def __init__(self, chord: Chord, speed: float):
+        self.path = chord.circle
+        self.start_prop = chord.circ_prop
+        self.center_offset = chord.center_offset
+        self.start_speed = speed
 
         """
         run_time is a property not open to the user
         """
-        super().__init__(mobject, run_time=6)
+        super().__init__(chord, run_time=6)
 
     @cache
     def interpolate_mobject(self, alpha):
@@ -55,5 +56,5 @@ class quarter_slo_down(Animation):
 
         pfp = self.path.point_from_proportion(exp_decay(self.run_time * alpha))
         if (pfp == ORIGIN).all():
-            pfp += self.origin_offset
+            pfp += self.center_offset
         self.mobject.move_to(pfp)
