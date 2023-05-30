@@ -85,11 +85,16 @@ class Chord(Scene):
     @cache
     def spin_chord(self, speed: float, rotations: float):
         # updater function
+        """
+        dt = difference (in seconds) since last frame. At 60fps render, this is
+        equivalent to 1/60. Even though this parameter is not at all necessary
+        to achieve what we want go_around_circle's to do (you can replace it
+        with 1/config.frame_rate, as is done in anim.py), it is necessary to
+        pass in because otherwise the updater will literally not fucking do
+        anything
+        """
+
         def go_around_circle(mob, dt):
-            """
-            dt = difference (in seconds) since last frame. At 60fps render, this
-            is equivalent to 1/60.
-            """
             self.circ_prop = (self.circ_prop + (dt * speed)) % 1
 
             """
@@ -112,7 +117,7 @@ class Chord(Scene):
 
         # can updater after sum secs and slow to full stop
         self.trav_dot.remove_updater(go_around_circle)
-        # self.play(quarter_slo_down(self, speed))
+        self.play(quarter_slo_down(self, speed, runtime=1))
 
     def construct(self):
         self.form_chord(init_prop=0)

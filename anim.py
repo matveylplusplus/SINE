@@ -34,27 +34,25 @@ class trav_logistically(Animation):
 
 
 class quarter_slo_down(Animation):
-    def __init__(self, chord: Chord, speed: float):
-        self.path = chord.circle
-        self.start_prop = chord.circ_prop
+    def __init__(self, chord: Chord, speed: float, runtime: float):
+        self.trav_dot = chord.trav_dot
+        self.circle = chord.circle
+        self.circ_prop = chord.circ_prop
         self.center_offset = chord.center_offset
         self.start_speed = speed
-
-        """
-        run_time is a property not open to the user
-        """
-        super().__init__(chord, run_time=6)
+        super().__init__(chord, run_time=runtime)
 
     @cache
     def interpolate_mobject(self, alpha):
-        def exp_decay(x):
-            return (
-                (-self.start_speed * exp(-1.1 * x))
-                + self.start_speed
-                + self.start_prop
-            )
+        self.circ_prop = (
+            self.circ_prop
+            + ((1 / config.frame_rate) * self.start_speed) * (1 - alpha)
+        ) % 1
 
-        pfp = self.path.point_from_proportion(exp_decay(self.run_time * alpha))
-        if (pfp == ORIGIN).all():
-            pfp += self.center_offset
-        self.mobject.move_to(pfp)
+        wiggle = 0
+        if self.circ_prop == 1 or self.circ_prop == 0:
+            wiggle = self.center_offset
+
+        self.trav_dot.move_to(
+            self.circle.point_from_proportion(self.circ_prop) + wiggle
+        )
