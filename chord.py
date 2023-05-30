@@ -7,31 +7,88 @@ that are called basically every frame
 """
 from functools import cache
 
-"""
-config.background_color = "#0c0b29"
-config.pixel_height = 1080
-config.pixel_width = 1920
-config.quality = "example_quality"
-"""
-
 
 class Chord(Scene):
     def form_chord(
         self,
-        dr: float,  # dot radius
-        dc: str,  # dot color
-        ts: float,  # travel speed (of dot)
-        cr: float,  # circle radius
-        cc: str,  # circle color
-        op: np.ndarray,  # origin point
-        opc: str,  # origin point color
-        mlc: str,  # mov_line color
-        slc: str,  # stat_line color
-        clc: str,  # chord_line color
-        ar: float,  # angle radius
-        ac: str,  # angle color
+        dot_radius: float,  # dot radius
+        dot_color: str,  # dot color
+        circle_radius: float,  # circle radius
+        circle_color: str,  # circle color
+        center: np.ndarray,  # origin point
+        center_color: str,  # origin point color
+        mov_color: str,  # mov_line color
+        stat_color: str,  # stat_line color
+        chord_color: str,  # chord_line color
+        angle_radius: float,  # angle radius
+        angle_color: str,  # angle color
+        init_prop: float,  # init point from proportion of circle
     ):
         # all auxiliary functions
+        def get_mov_line():
+            return Line(center, self.trav_dot.get_center(), color=mov_color)
+
+        def get_chord_line():
+            return Line(self.trav_dot.get_center(), ORIGIN, color=chord_color)
+
+        def get_angle():
+            return Angle(self.stat_line, self.mov_line, angle_radius, color=angle_color)
+
+        # "main" code!
+        """
+        circ_offset has to be a field of Chord to be modified in the
+        go_around_circle updater
+        """
+        self.circ_offset = 0.0
+        self.trav_dot = Dot(radius=dot_radius, color=dot_color, fill_opacity=0.0)
+        self.op_dot = Dot(radius=dot_radius, color=center_color)
+        self.circle = Circle(radius=circle_radius, color=circle_color)
+        self.stat_line = Line(center, ORIGIN, color=stat_color)
+        self.origin_offset = UP * 0.001
+
+        if init_prop == 1 or init_prop == 0:
+            """
+            tiny initial position offset, for same reason as explained in
+            go_around_circle(). Otherwise, the first frame can't render
+            """
+            wiggle = self.origin_offset
+
+        # move into position
+        self.trav_dot.move_to(self.circle.point_from_proportion(init_prop + wiggle))
+        self.op_dot.move_to(center)
+        self.circle.move_to(center)
+
+        # set up redraws
+        self.mov_line = always_redraw(get_mov_line)
+        self.chord_line = always_redraw(get_chord_line)
+        self.angol = always_redraw(get_angle)
+
+        # add everything
+        self.add(self.stat_line)
+        self.add(self.circle)
+        self.add(self.trav_dot)
+        self.add(self.angol)
+        self.add(self.mov_line)
+        self.add(self.chord_line)
+        self.add(self.op_dot)
+
+    def construct(self):
+        self.form_chord(
+            dot_radius=0.1,
+            dot_color=YELLOW,
+            circle_radius=3.0,
+            circle_color=RED,
+            center=np.array([-3, 0, 0]),
+            center_color=WHITE,
+            mov_color=BLUE,
+            stat_color=PURPLE,
+            chord_color=ORANGE,
+            angle_radius=0.5,
+            angle_color=YELLOW,
+            init_prop=0.25,
+        )
+
+    def spin_chord(self, speed: float, rotations: float):
         @cache
         def go_around_circle(mob, dt):
             """
@@ -50,83 +107,11 @@ class Chord(Scene):
                 pfp += self.origin_offset
             mob.move_to(pfp)
 
-        def get_mov_line():
-            return Line(op, self.trav_dot.get_center(), color=mlc)
-
-        def get_chord_line():
-            return Line(self.trav_dot.get_center(), ORIGIN, color=clc)
-
-        def get_angle():
-            return Angle(self.stat_line, mov_line, ar, color=ac)
-
-        # "main" code!
-        """
-        circ_offset has to be a field of Chord to be modified in the
-        go_around_circle updater
-        """
-        self.circ_offset = 0.0
-        self.trav_dot = Dot(radius=dr, color=dc, fill_opacity=0.0)
-        self.op_dot = Dot(radius=dr, color=opc)
-        self.circle = Circle(radius=cr, color=cc)
-        self.stat_line = Line(op, ORIGIN, color=slc)
-        self.origin_offset = UP * 0.01
-
-        """
-        tiny initial position offset, for same reason as explained in
-        go_around_circle(). Otherwise, the first frame can't render
-        """
-        self.trav_dot.move_to(ORIGIN + self.origin_offset)
-
-        self.op_dot.move_to(op)
-        self.circle.move_to(op)
-
-        # init updater and redraw
-        mov_line = always_redraw(get_mov_line)
-        chord_line = always_redraw(get_chord_line)
         self.trav_dot.add_updater(go_around_circle)
-        angol = always_redraw(get_angle)
-
-        # add everything
-        self.add(self.stat_line)
-        self.add(self.circle)
-        self.add(self.trav_dot)
-        self.add(angol)
-        self.add(mov_line)
-        self.add(chord_line)
-        self.add(self.op_dot)
+        self.wait(rotations / speed)
 
         # can updater after sum secs
-        self.wait(3)
         self.trav_dot.remove_updater(go_around_circle)
-        self.play(
-            quarter_slo_down(self.trav_dot, self.circle, 0.75, self.origin_offset, ts)
-        )
-        self.play(
-            trav_logistically(
-                self.trav_dot,
-                self.circle,
-                self.circ_offset,
-                3.25,
-                self.origin_offset,
-                5,
-            )
-        )  # providing a start_prop might not be necessary...why not use self.circ_offset?
-
-    def construct(self):
-        self.form_chord(
-            0.1,
-            YELLOW,
-            0.25,
-            3.0,
-            RED,
-            np.array([-3, 0, 0]),
-            WHITE,
-            BLUE,
-            PURPLE,
-            ORANGE,
-            0.5,
-            YELLOW,
-        )
 
 
 class trav_logistically(Animation):
