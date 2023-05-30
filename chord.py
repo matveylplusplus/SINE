@@ -1,5 +1,6 @@
 from manim import *
-import copy
+from copy import copy
+from numpy import ndarray, array, exp
 
 """
 cache is purely for optimizing self.[blank] calls in animation/updater functions
@@ -11,18 +12,19 @@ from functools import cache
 class Chord(Scene):
     def form_chord(
         self,
-        dot_radius: float,  # dot radius
-        dot_color: str,  # dot color
-        circle_radius: float,  # circle radius
-        circle_color: str,  # circle color
-        center: np.ndarray,  # origin point
-        center_color: str,  # origin point color
-        mov_color: str,  # mov_line color
-        stat_color: str,  # stat_line color
-        chord_color: str,  # chord_line color
-        angle_radius: float,  # angle radius
-        angle_color: str,  # angle color
-        init_prop: float,  # init point from proportion of circle
+        dot_radius: float = 0.1,
+        dot_opacity: float = 0.0,
+        dot_color: str = None,
+        circle_radius: float = 3.0,
+        circle_color: str = RED,
+        center: ndarray = array([-3, 0, 0]),
+        center_color: str = WHITE,
+        mov_color: str = BLUE,  # mov_line color
+        stat_color: str = PURPLE,  # stat_line color
+        chord_color: str = ORANGE,  # chord_line color
+        angle_radius: float = 0.5,
+        angle_color: str = YELLOW,
+        init_prop: float = 0,  # init point from proportion of circle
     ):
         # all auxiliary functions
         def get_mov_line():
@@ -32,7 +34,9 @@ class Chord(Scene):
             return Line(self.trav_dot.get_center(), ORIGIN, color=chord_color)
 
         def get_angle():
-            return Angle(self.stat_line, self.mov_line, angle_radius, color=angle_color)
+            return Angle(
+                self.stat_line, self.mov_line, angle_radius, color=angle_color
+            )
 
         # "main" code!
         """
@@ -40,12 +44,15 @@ class Chord(Scene):
         go_around_circle updater
         """
         self.circ_offset = 0.0
-        self.trav_dot = Dot(radius=dot_radius, color=dot_color, fill_opacity=0.0)
+        self.trav_dot = Dot(
+            radius=dot_radius, color=dot_color, fill_opacity=dot_opacity
+        )
         self.op_dot = Dot(radius=dot_radius, color=center_color)
         self.circle = Circle(radius=circle_radius, color=circle_color)
         self.stat_line = Line(center, ORIGIN, color=stat_color)
         self.origin_offset = UP * 0.001
 
+        wiggle = 0
         if init_prop == 1 or init_prop == 0:
             """
             tiny initial position offset, for same reason as explained in
@@ -54,9 +61,11 @@ class Chord(Scene):
             wiggle = self.origin_offset
 
         # move into position
-        self.trav_dot.move_to(self.circle.point_from_proportion(init_prop + wiggle))
         self.op_dot.move_to(center)
         self.circle.move_to(center)
+        self.trav_dot.move_to(
+            self.circle.point_from_proportion(init_prop) + wiggle
+        )
 
         # set up redraws
         self.mov_line = always_redraw(get_mov_line)
@@ -73,20 +82,7 @@ class Chord(Scene):
         self.add(self.op_dot)
 
     def construct(self):
-        self.form_chord(
-            dot_radius=0.1,
-            dot_color=YELLOW,
-            circle_radius=3.0,
-            circle_color=RED,
-            center=np.array([-3, 0, 0]),
-            center_color=WHITE,
-            mov_color=BLUE,
-            stat_color=PURPLE,
-            chord_color=ORANGE,
-            angle_radius=0.5,
-            angle_color=YELLOW,
-            init_prop=0.25,
-        )
+        self.form_chord(init_prop=0.45)
 
     def spin_chord(self, speed: float, rotations: float):
         @cache
@@ -95,7 +91,7 @@ class Chord(Scene):
             dt = difference (in seconds) since last frame. At 60fps render, this
             is equivalent to 1/60.
             """
-            self.circ_offset += dt * ts
+            self.circ_offset += dt * speed
             pfp = self.circle.point_from_proportion(self.circ_offset % 1)
             if (pfp == self.circle.point_from_proportion(0)).all():
                 """
@@ -115,7 +111,9 @@ class Chord(Scene):
 
 
 class trav_logistically(Animation):
-    def __init__(self, mobject, path, path_offset, rotations, origin_offset, runtime):
+    def __init__(
+        self, mobject, path, path_offset, rotations, origin_offset, runtime
+    ):
         self.path = path
         self.init_path_offset = copy.copy(path_offset)
         self.curr_path_offset = path_offset
@@ -127,7 +125,7 @@ class trav_logistically(Animation):
     def interpolate_mobject(self, alpha):
         def logistic(x):
             return (
-                self.rotations / (1 + np.exp((-20 * x) + 10))
+                self.rotations / (1 + exp((-20 * x) + 10))
             ) + self.init_path_offset
 
         pfp = self.path.point_from_proportion(logistic(alpha) % 1)
@@ -151,7 +149,7 @@ class quarter_slo_down(Animation):
     def interpolate_mobject(self, alpha):
         def exp_decay(x):
             return (
-                (-self.start_speed * np.exp(-1.1 * x))
+                (-self.start_speed * exp(-1.1 * x))
                 + self.start_speed
                 + self.start_prop
             )
