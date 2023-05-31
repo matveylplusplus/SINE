@@ -1,6 +1,6 @@
 from manim import *
 from numpy import exp, copy
-from chord import Chord
+from chord import DemonstrateChord
 
 """
 cache is purely for optimizing self.[blank] calls in animation/updater functions
@@ -34,7 +34,7 @@ class trav_logistically(Animation):
 
 
 class quarter_slo_down(Animation):
-    def __init__(self, chord: Chord, speed: float, runtime: float):
+    def __init__(self, chord: DemonstrateChord, speed: float, runtime: float):
         self.trav_dot = chord.trav_dot
         self.circle = chord.circle
         self.circ_prop = chord.circ_prop
