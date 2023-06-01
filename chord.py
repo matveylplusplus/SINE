@@ -59,7 +59,7 @@ class ChordCircle(VMobject):
                 and stat_line from ever being parallel so that the construction
                 of the Angle object in get_angle() doesn't crap itself.
                 """
-                wiggle = UP * 1  # lil wiggle
+                wiggle = UP * 0.001  # lil wiggle
             return Dot(
                 point=self.circle.point_from_proportion(circ_prop) + wiggle,
                 radius=dot_radii,
@@ -118,6 +118,12 @@ class ChordCircle(VMobject):
     def set_theta(self, theta):
         return self.theta.animate.set_value(theta)
 
+    def set_center_x(self, center_x):
+        return self.center_x.animate.set_value(center_x)
+
+    def set_center_y(self, center_y):
+        return self.center_y.animate.set_value(center_y)
+
 
 """
 1) make cc.theta.animate.set_value(720) be a return value of a ChordCircle
@@ -131,11 +137,14 @@ class ChordCircle(VMobject):
 
 class DemonstrateChord(Scene):
     def construct(self):
-        cc = ChordCircle(center_x=0, trav_dot_opacity=1.0, trav_dot_color=GREEN)
+        cc = ChordCircle(center_x=-3)
         self.add(cc)
 
-        self.play(cc.set_theta(720), run_time=6)
-        self.wait()
-        self.play(cc.center_y.animate.set_value(1), run_time=1)
-        # self.play(FadeOut(cc.chord_line))
-        self.play(cc.set_theta(810), run_time=1)
+        self.play(cc.set_theta(360), cc.set_center_x(3), run_time=6)
+
+        """
+        frozen_frame=False prevents the scene from freezing on a near-full angle
+        circle and makes sure it's adequately reset to 0 at the end of the
+        360-degree turn
+        """
+        self.wait(frozen_frame=False)
