@@ -3,7 +3,7 @@
 # for the chordcircle?
 
 from manim import *
-from numpy import ndarray, array
+from numpy import array
 
 
 class ChordCircle(VMobject):
@@ -28,7 +28,7 @@ class ChordCircle(VMobject):
 
         def get_center_dot():
             return Dot(
-                point=np.array(
+                point=array(
                     [self.center_x.get_value(), self.center_y.get_value(), 0.0]
                 ),
                 radius=dot_radii,
@@ -39,13 +39,23 @@ class ChordCircle(VMobject):
             return Circle(
                 radius=circle_radius,
                 color=circle_color,
-                arc_center=self.center_dot.get_center(),
+                arc_center=array(
+                    [self.center_x.get_value(), self.center_y.get_value(), 0.0]
+                ),
             )
 
         def get_stat_line():
             return Line(
-                start=self.center_dot.get_center(),
-                end=self.circle.point_from_proportion(0),
+                start=array(
+                    [self.center_x.get_value(), self.center_y.get_value(), 0.0]
+                ),
+                end=array(
+                    [
+                        self.center_x.get_value() + circle_radius,
+                        self.center_y.get_value(),
+                        0.0,
+                    ]
+                ),
                 color=stat_color,
             )
 
@@ -69,17 +79,35 @@ class ChordCircle(VMobject):
 
         def get_mov_line():
             return Line(
-                start=self.center_dot.get_center(),
+                start=array(
+                    [
+                        self.center_x.get_value(),
+                        self.center_y.get_value(),
+                        0.0,
+                    ]
+                ),
                 end=self.trav_dot.get_center(),
-                color=mov_color,
+            ).set_color(
+                ("#0A68EF", "#4AF1F2", "#0A68EF")  # gradient!!
             )
 
         def get_chord_line():
             return Line(
-                start=self.trav_dot.get_center(),
+                start=self.mov_line.get_end(),
                 end=self.stat_line.get_end(),
                 color=chord_color,
             )
+            """
+                start=self.trav_dot.get_center(),
+                end=array(
+                    [
+                        self.center_x.get_value() + circle_radius,
+                        self.center_y.get_value(),
+                        0.0,
+                    ]
+                ),
+                color=chord_color,
+                """
 
         def get_angle():
             return Angle(
@@ -137,10 +165,17 @@ class ChordCircle(VMobject):
 
 class DemonstrateChord(Scene):
     def construct(self):
-        cc = ChordCircle(center_x=-3)
+        cc = ChordCircle(
+            center_x=-3, trav_dot_opacity=1.0, trav_dot_color=GREEN
+        )
         self.add(cc)
 
-        self.play(cc.set_theta(360), cc.set_center_x(3), run_time=6)
+        self.play(
+            cc.set_theta(360),
+            cc.set_center_x(3),
+            cc.set_center_y(1),
+            run_time=10,
+        )
 
         """
         frozen_frame=False prevents the scene from freezing on a near-full angle
