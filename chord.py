@@ -1,6 +1,8 @@
-# TODO: make Chord a vDict, but how to bundle animations with said vDict?
-# should the chordcircle be asking for the scene, or should the scene be asking
-# for the chordcircle?
+"""
+TODO: 1) Graph chord length with respect to theta 2) Consolidate redraw
+functions into one big one that returns a tuple/list? This would be much more
+efficient
+"""
 
 from manim import *
 from numpy import array
@@ -39,27 +41,22 @@ class ChordCircle(VMobject):
             return Circle(
                 radius=circle_radius,
                 color=circle_color,
-                arc_center=array(
-                    [self.center_x.get_value(), self.center_y.get_value(), 0.0]
-                ),
+                arc_center=get_center_dot().get_center(),
             )
 
         def get_stat_line():
+            start = get_center_dot().get_center()
             return Line(
-                start=array(
-                    [self.center_x.get_value(), self.center_y.get_value(), 0.0]
-                ),
-                end=array(
-                    [
-                        self.center_x.get_value() + circle_radius,
-                        self.center_y.get_value(),
-                        0.0,
-                    ]
-                ),
+                start=start,
+                end=start + array([circle_radius, 0, 0]),
                 color=stat_color,
             )
 
         def get_trav_dot():
+            """
+            This code could easily be put into get_mov_line() if we decide we
+            don't really need a dot to travel around the circle n shit
+            """
             wiggle = 0
             circ_prop = (self.theta.get_value() / 360) % 1
             if circ_prop == 1 or circ_prop == 0:
@@ -71,7 +68,7 @@ class ChordCircle(VMobject):
                 """
                 wiggle = UP * 0.001  # lil wiggle
             return Dot(
-                point=self.circle.point_from_proportion(circ_prop) + wiggle,
+                point=get_circle().point_from_proportion(circ_prop) + wiggle,
                 radius=dot_radii,
                 color=trav_dot_color,
                 fill_opacity=trav_dot_opacity,
@@ -79,40 +76,24 @@ class ChordCircle(VMobject):
 
         def get_mov_line():
             return Line(
-                start=array(
-                    [
-                        self.center_x.get_value(),
-                        self.center_y.get_value(),
-                        0.0,
-                    ]
-                ),
-                end=self.trav_dot.get_center(),
+                start=get_center_dot().get_center(),
+                end=get_trav_dot().get_center(),
             ).set_color(
                 ("#0A68EF", "#4AF1F2", "#0A68EF")  # gradient!!
             )
 
         def get_chord_line():
             return Line(
-                start=self.mov_line.get_end(),
-                end=self.stat_line.get_end(),
+                start=get_trav_dot().get_center(),
+                end=get_center_dot().get_center()
+                + array([circle_radius, 0, 0]),
                 color=chord_color,
             )
-            """
-                start=self.trav_dot.get_center(),
-                end=array(
-                    [
-                        self.center_x.get_value() + circle_radius,
-                        self.center_y.get_value(),
-                        0.0,
-                    ]
-                ),
-                color=chord_color,
-                """
 
         def get_angle():
             return Angle(
-                line1=self.stat_line,
-                line2=self.mov_line,
+                line1=get_stat_line(),
+                line2=get_mov_line(),
                 radius=angle_radius,
                 color=angle_color,
             )
@@ -143,6 +124,7 @@ class ChordCircle(VMobject):
         self.add(self.chord_line)
         self.add(self.center_dot)
 
+    # Animation Functions!
     def set_theta(self, theta):
         return self.theta.animate.set_value(theta)
 
@@ -151,35 +133,3 @@ class ChordCircle(VMobject):
 
     def set_center_y(self, center_y):
         return self.center_y.animate.set_value(center_y)
-
-
-"""
-1) make cc.theta.animate.set_value(720) be a return value of a ChordCircle
-   function, ensuring proper OOP
-2) make the center of the ChordCircle be a ValueTracker that all submobjects
-   orient themelves around; when you want to move the ChordCircle, you just put
-   in self.play a call to a ChordCircle function that returns something like
-   self.center_point.animate.set_value(point_to_move_to)
-"""
-
-
-class DemonstrateChord(Scene):
-    def construct(self):
-        cc = ChordCircle(
-            center_x=-3, trav_dot_opacity=1.0, trav_dot_color=GREEN
-        )
-        self.add(cc)
-
-        self.play(
-            cc.set_theta(360),
-            cc.set_center_x(3),
-            cc.set_center_y(1),
-            run_time=10,
-        )
-
-        """
-        frozen_frame=False prevents the scene from freezing on a near-full angle
-        circle and makes sure it's adequately reset to 0 at the end of the
-        360-degree turn
-        """
-        self.wait(frozen_frame=False)
