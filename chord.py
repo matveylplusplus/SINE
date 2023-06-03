@@ -1,7 +1,8 @@
 """
-TODO: 1) Graph chord length with respect to theta 2) Consolidate redraw
-functions into one big one that returns a tuple/list? This would be much more
-efficient
+TODO: 1) Graph chord length with respect to theta on some lil axes 2)
+Consolidate redraw functions into one big one that returns a tuple/list? This
+would be much more efficient 3) Add theta symbol that follows angle around 4)
+Add a valuetracker for the circle radius to enable re-scaling 
 """
 
 from manim import *
